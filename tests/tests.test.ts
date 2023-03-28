@@ -1,4 +1,4 @@
-describe("InputDate", () => {
+describe("text", () => {
     it("ok", () => {
         // TODO
     });
