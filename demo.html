@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset=UTF-8>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- <script src="https://cdn.jsdelivr.net/gh/magiclen/fit-html-text/dist/fit-html-text.min.js"></script> -->
+    <script src="./dist/fit-html-text.min.js"></script>
+    <title>fit-html-text</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="p-3 p-lg-5">
+    <div id="demo-fit-html-text" class="container">
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="form-floating mb-3">
+                    <input type="text" id="text" class="form-control" placeholder="text" value="This is an apple.">
+                    <label for="text">text</label>
+                </div>
+            </div>
+            <div class="col-12">
+                <span id="line" class="border d-block w-100"></span>
+            </div>
+            <div class="col-12">
+                <span id="lines" class="border d-block text-break w-100" style="height: 300px;"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputText = document.getElementById("text");
+
+        const line = document.getElementById("line");
+        const lines = document.getElementById("lines");
+
+        const refresh = () => {
+            FitHtmlText.fitText(line);
+            FitHtmlText.fitText(lines, {
+                multipleLines: true,
+                containerMaxHeight: lines.clientHeight,
+            });
+        };
+
+        const inputTextInput = () => {
+            let text = inputText.value.trim();
+            line.innerText = text;
+            lines.innerText = text;
+            refresh();
+        };
+
+        inputText.addEventListener("input", inputTextInput);
+
+        window.addEventListener("resize", () => {
+            refresh();
+        });
+
+        inputTextInput();
+    </script>
+</body>
+
+</html>
