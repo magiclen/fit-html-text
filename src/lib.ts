@@ -56,6 +56,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
     meassureNode.style.left = `-${options.containerMaxWidth}px`;
     meassureNode.style.visibility = "hidden";
 
+    meassureNode.style.padding = style.getPropertyValue("padding");
     meassureNode.style.fontFamily = style.getPropertyValue("font-family");
     meassureNode.style.letterSpacing = style.getPropertyValue("letter-spacing");
 
