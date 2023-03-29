@@ -13,8 +13,8 @@ import { fitText } from "fit-html-text";
 const element = document.getElementById("myElement");
 
 fitText(element, {
-    fontSizeMin: 8,
-    fontSizeMax: 72,
+    fontMinSize: 8,
+    fontMaxSize: 72,
     containerMaxWidth: 300,
     containerMaxHeight: 300,
     multipleLines: false,
