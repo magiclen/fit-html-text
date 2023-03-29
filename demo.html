@@ -37,6 +37,9 @@
         const lines = document.getElementById("lines");
 
         const refresh = () => {
+            FitHtmlText.fitText(inputText, {
+                containerMaxHeight: inputText.clientHeight + 6,
+            });
             FitHtmlText.fitText(line);
             FitHtmlText.fitText(lines, {
                 multipleLines: true,

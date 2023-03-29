@@ -1,42 +1,60 @@
 export type FitTextOptions = {
     /**
-     * In pixels. Default: `8`.
+     * The minimum font size, in pixels.
+     *
+     * @default 8
      */
-    fontSizeMin?: number,
+    fontMinSize?: number,
     /**
-     * In pixels. Default: `Infinity`.
+     * The maximum font size, in pixels.
+     *
+     * Set to `Infinity` means unlimited.
+     *
+     * @default Infinity
      */
-    fontSizeMax?: number,
+    fontMaxSize?: number,
     /**
-     * In pixels. Default: the client width of the input element.
+     * The maximum width for text, in pixels.
+     *
+     * @default element.getBoundingClientRect().width
      */
     containerMaxWidth?: number,
     /**
-     * In pixels. Default: `Infinity`.
+     * The maximum height for text, in pixels.
+     *
+     * If `multipleLines` is set to `true`, this option should also be set to a reasonable integer.
+     *
+     * Set to `Infinity` means unlimited.
+     *
+     * @default Infinity
      */
     containerMaxHeight?: number,
     /**
-     * Allow multiple lines. Default: `false`.
+     * Whether to allow multiple lines.
+     *
+     * If the text allows line break or multiple lines, this option should be set to `true`.
+     *
+     * @default false
      */
     multipleLines?: boolean,
 };
 
 export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
-    const elementRect = element.getBoundingClientRect();
-
     if (typeof options === "undefined") {
         options = {};
     }
 
-    if (typeof options.fontSizeMin === "undefined" || !(options.fontSizeMin > 0) || options.fontSizeMin === Infinity) {
-        options.fontSizeMin = 8;
+    if (typeof options.fontMinSize === "undefined" || !(options.fontMinSize > 0) || options.fontMinSize === Infinity) {
+        options.fontMinSize = 8;
     }
 
-    if (typeof options.fontSizeMax === "undefined" || !(options.fontSizeMax > 0)) {
-        options.fontSizeMax = Infinity;
+    if (typeof options.fontMaxSize === "undefined" || !(options.fontMaxSize > 0)) {
+        options.fontMaxSize = Infinity;
     }
 
     if (typeof options.containerMaxWidth === "undefined" || !(options.containerMaxWidth > 0) || options.containerMaxWidth === Infinity) {
+        const elementRect = element.getBoundingClientRect();
+
         options.containerMaxWidth = elementRect.width;
     }
 
@@ -63,12 +81,16 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
     meassureNode.style.fontFamily = style.getPropertyValue("font-family");
     meassureNode.style.letterSpacing = style.getPropertyValue("letter-spacing");
 
-    meassureNode.innerHTML = element.innerHTML;
+    if (element instanceof HTMLInputElement) {
+        meassureNode.innerText = element.value;
+    } else {
+        meassureNode.innerHTML = element.innerHTML;
+    }
     
     document.body.appendChild(meassureNode);
 
-    let fontSize = options.fontSizeMin + 1;
-    let lastFontSize = options.fontSizeMin;
+    let fontSize = options.fontMinSize + 1;
+    let lastFontSize = options.fontMinSize;
 
     if (options.multipleLines) {
         meassureNode.style.display = "block";
@@ -80,7 +102,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
         let lastClientHeightSameCounter = 0;
         let lastClientHeight = Number.MIN_SAFE_INTEGER;
 
-        while (fontSize <= options.fontSizeMax) {
+        while (fontSize <= options.fontMaxSize) {
             meassureNode.style.fontSize = `${fontSize}px`;
 
             const rect = meassureNode.getBoundingClientRect();
@@ -111,7 +133,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
         let lastClientWidth = Number.MIN_SAFE_INTEGER;
         let lastClientHeight = Number.MIN_SAFE_INTEGER;
 
-        while (fontSize <= options.fontSizeMax) {
+        while (fontSize <= options.fontMaxSize) {
             meassureNode.style.fontSize = `${fontSize}px`;
 
             const rect = meassureNode.getBoundingClientRect();
@@ -148,7 +170,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
         }
     }
 
-    element.style.fontSize = `${lastFontSize}px`;
-
     document.body.removeChild(meassureNode);
+
+    element.style.fontSize = `${lastFontSize}px`;
 };
