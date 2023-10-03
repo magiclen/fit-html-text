@@ -1,4 +1,4 @@
-export type FitTextOptions = {
+export interface FitTextOptions {
     /**
      * The minimum font size, in pixels.
      *
@@ -37,7 +37,7 @@ export type FitTextOptions = {
      * @default false
      */
     multipleLines?: boolean,
-};
+}
 
 export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
     if (typeof options === "undefined") {
