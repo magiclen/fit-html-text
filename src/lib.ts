@@ -4,7 +4,7 @@ export interface FitTextOptions {
      *
      * @default 8
      */
-    fontMinSize?: number,
+    fontMinSize?: number;
     /**
      * The maximum font size, in pixels.
      *
@@ -12,13 +12,13 @@ export interface FitTextOptions {
      *
      * @default Infinity
      */
-    fontMaxSize?: number,
+    fontMaxSize?: number;
     /**
      * The maximum width for text, in pixels.
      *
      * @default element.getBoundingClientRect().width
      */
-    containerMaxWidth?: number,
+    containerMaxWidth?: number;
     /**
      * The maximum height for text, in pixels.
      *
@@ -28,7 +28,7 @@ export interface FitTextOptions {
      *
      * @default Infinity
      */
-    containerMaxHeight?: number,
+    containerMaxHeight?: number;
     /**
      * Whether to allow multiple lines.
      *
@@ -36,29 +36,41 @@ export interface FitTextOptions {
      *
      * @default false
      */
-    multipleLines?: boolean,
+    multipleLines?: boolean;
 }
 
-export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
+export const fitText = (element: HTMLElement, options?: FitTextOptions): void => {
     if (typeof options === "undefined") {
         options = {};
     }
 
-    if (typeof options.fontMinSize === "undefined" || !(options.fontMinSize > 0) || options.fontMinSize === Infinity) {
+    if (
+        typeof options.fontMinSize === "undefined"
+        || !(options.fontMinSize > 0) || options.fontMinSize === Infinity
+    ) {
         options.fontMinSize = 8;
     }
 
-    if (typeof options.fontMaxSize === "undefined" || !(options.fontMaxSize > 0)) {
+    if (
+        typeof options.fontMaxSize === "undefined" || !(options.fontMaxSize > 0)
+    ) {
         options.fontMaxSize = Infinity;
     }
 
-    if (typeof options.containerMaxWidth === "undefined" || !(options.containerMaxWidth > 0) || options.containerMaxWidth === Infinity) {
+    if (
+        typeof options.containerMaxWidth === "undefined"
+        || !(options.containerMaxWidth > 0)
+        || options.containerMaxWidth === Infinity
+    ) {
         const elementRect = element.getBoundingClientRect();
 
         options.containerMaxWidth = elementRect.width;
     }
 
-    if (typeof options.containerMaxHeight === "undefined" || !(options.containerMaxHeight > 0)) {
+    if (
+        typeof options.containerMaxHeight === "undefined"
+        || !(options.containerMaxHeight > 0)
+    ) {
         options.containerMaxHeight = Infinity;
     }
 
@@ -86,7 +98,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
     } else {
         meassureNode.innerHTML = element.innerHTML;
     }
-    
+
     document.body.appendChild(meassureNode);
 
     let fontSize = options.fontMinSize + 1;
@@ -95,7 +107,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
     if (options.multipleLines) {
         meassureNode.style.display = "block";
         meassureNode.style.width = `${options.containerMaxWidth}px`;
-        
+
         meassureNode.style.wordBreak = style.getPropertyValue("word-break");
 
         // this counter is used to avoid infinite looping
@@ -106,7 +118,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
             meassureNode.style.fontSize = `${fontSize}px`;
 
             const rect = meassureNode.getBoundingClientRect();
-    
+
             if (rect.height > options.containerMaxHeight) {
                 break;
             }
@@ -141,7 +153,7 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
             if (rect.width > options.containerMaxWidth) {
                 break;
             }
-    
+
             if (rect.height > options.containerMaxHeight) {
                 break;
             }
@@ -164,7 +176,17 @@ export const fitText = (element: HTMLElement, options? : FitTextOptions) => {
 
             lastFontSize = fontSize;
 
-            const step = Math.max(1, Math.floor(Math.min((options.containerMaxWidth - rect.width) / (diffWidth + 3), (options.containerMaxHeight - rect.height) / (diffHeight + 3))));
+            const step = Math.max(
+                1,
+                Math.floor(
+                    Math.min(
+                        (options.containerMaxWidth - rect.width)
+                        / (diffWidth + 3),
+                        (options.containerMaxHeight - rect.height)
+                        / (diffHeight + 3),
+                    ),
+                ),
+            );
 
             fontSize += step;
         }
