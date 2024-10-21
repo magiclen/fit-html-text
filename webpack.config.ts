@@ -1,7 +1,6 @@
 import TerserPlugin from "terser-webpack-plugin";
 import type { Configuration } from "webpack";
 
-
 const config: Configuration = {
     entry: "./src/lib.ts",
     output: {
