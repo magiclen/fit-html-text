@@ -18,16 +18,14 @@
         <div id="demo-fit-html-text" class="container">
             <div class="row g-3">
                 <div class="col-12">
-                    <div class="form-floating mb-3">
-                        <input
-                            type="text"
-                            id="text"
-                            class="form-control"
-                            placeholder="text"
-                            value="This is an apple."
-                        />
-                        <label for="text">text</label>
-                    </div>
+                    <label for="text" class="form-label">Text</label>
+                    <input
+                        type="text"
+                        id="text"
+                        class="form-control"
+                        style="height: 80px"
+                        value="This is an apple."
+                    />
                 </div>
                 <div class="col-12">
                     <span id="line" class="border d-block w-100"></span>
@@ -48,31 +46,30 @@
             const line = document.getElementById("line");
             const lines = document.getElementById("lines");
 
-            const refresh = () => {
-                FitHtmlText.fitText(inputText, {
-                    containerMaxHeight: inputText.clientHeight + 6,
-                });
-                FitHtmlText.fitText(line);
-                FitHtmlText.fitText(lines, {
-                    multipleLines: true,
-                    containerMaxHeight: lines.clientHeight,
-                });
+            const updateText = () => {
+                const text = inputText.value.trim();
+
+                line.textContent = text;
+                lines.textContent = text;
             };
 
-            const inputTextInput = () => {
-                let text = inputText.value.trim();
-                line.innerText = text;
-                lines.innerText = text;
-                refresh();
-            };
+            inputText.addEventListener("input", updateText);
 
-            inputText.addEventListener("input", inputTextInput);
+            updateText();
 
-            window.addEventListener("resize", () => {
-                refresh();
+            // The input has a fixed height, so its text should not be taller than its content box.
+            const inputStyle = getComputedStyle(inputText);
+
+            FitHtmlText.autoFitText(inputText, {
+                maxHeight:
+                    inputText.clientHeight -
+                    parseFloat(inputStyle.paddingTop) -
+                    parseFloat(inputStyle.paddingBottom),
             });
-
-            inputTextInput();
+            FitHtmlText.autoFitText(line);
+            FitHtmlText.autoFitText(lines, {
+                multiline: true,
+            });
         </script>
     </body>
 </html>
