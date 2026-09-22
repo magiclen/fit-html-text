@@ -1,6 +1,6 @@
 {
     "name": "fit-html-text",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "description": "Fit text into its surrounding container.",
     "keywords": [
         "font-size",
