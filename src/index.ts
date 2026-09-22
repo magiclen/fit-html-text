@@ -45,32 +45,28 @@ export const fitText = (element: HTMLElement, options?: FitTextOptions): void =>
     }
 
     if (
-        typeof options.fontMinSize === "undefined"
-        || !(options.fontMinSize > 0) || options.fontMinSize === Infinity
+        typeof options.fontMinSize === "undefined" ||
+        !(options.fontMinSize > 0) ||
+        options.fontMinSize === Infinity
     ) {
         options.fontMinSize = 8;
     }
 
-    if (
-        typeof options.fontMaxSize === "undefined" || !(options.fontMaxSize > 0)
-    ) {
+    if (typeof options.fontMaxSize === "undefined" || !(options.fontMaxSize > 0)) {
         options.fontMaxSize = Infinity;
     }
 
     if (
-        typeof options.containerMaxWidth === "undefined"
-        || !(options.containerMaxWidth > 0)
-        || options.containerMaxWidth === Infinity
+        typeof options.containerMaxWidth === "undefined" ||
+        !(options.containerMaxWidth > 0) ||
+        options.containerMaxWidth === Infinity
     ) {
         const elementRect = element.getBoundingClientRect();
 
         options.containerMaxWidth = elementRect.width;
     }
 
-    if (
-        typeof options.containerMaxHeight === "undefined"
-        || !(options.containerMaxHeight > 0)
-    ) {
+    if (typeof options.containerMaxHeight === "undefined" || !(options.containerMaxHeight > 0)) {
         options.containerMaxHeight = Infinity;
     }
 
@@ -180,10 +176,8 @@ export const fitText = (element: HTMLElement, options?: FitTextOptions): void =>
                 1,
                 Math.floor(
                     Math.min(
-                        (options.containerMaxWidth - rect.width)
-                        / (diffWidth + 3),
-                        (options.containerMaxHeight - rect.height)
-                        / (diffHeight + 3),
+                        (options.containerMaxWidth - rect.width) / (diffWidth + 3),
+                        (options.containerMaxHeight - rect.height) / (diffHeight + 3),
                     ),
                 ),
             );
