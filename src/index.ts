@@ -128,7 +128,8 @@ export const autoFitText = (
     const document = element.ownerDocument;
     const view = document.defaultView;
 
-    if (view === null) {
+    // Without `requestAnimationFrame`, such as in jsdom by default, nothing is rendered, so nothing is watched.
+    if (view === null || !("requestAnimationFrame" in view)) {
         return (): void => {};
     }
 
@@ -154,28 +155,33 @@ export const autoFitText = (
         }
     };
 
-    const resizeObserver = new view.ResizeObserver(() => {
-        const size = getContentSize(view.getComputedStyle(element));
+    // Some environments, such as jsdom, do not have `ResizeObserver` or `document.fonts`, so these changes are not watched there.
+    const resizeObserver =
+        "ResizeObserver" in view
+            ? new view.ResizeObserver(() => {
+                  const size = getContentSize(view.getComputedStyle(element));
 
-        if (size.width !== fittedSize?.width || size.height !== fittedSize.height) {
-            scheduleFit();
-        }
-    });
+                  if (size.width !== fittedSize?.width || size.height !== fittedSize.height) {
+                      scheduleFit();
+                  }
+              })
+            : undefined;
+    const fonts = "fonts" in document ? document.fonts : undefined;
 
     const mutationObserver = new view.MutationObserver(scheduleFit);
 
     fit();
 
-    resizeObserver.observe(element);
+    resizeObserver?.observe(element);
     mutationObserver.observe(element, { characterData: true, childList: true, subtree: true });
     element.addEventListener("input", scheduleFit);
-    document.fonts.addEventListener("loadingdone", scheduleFit);
+    fonts?.addEventListener("loadingdone", scheduleFit);
 
     return (): void => {
-        resizeObserver.disconnect();
+        resizeObserver?.disconnect();
         mutationObserver.disconnect();
         element.removeEventListener("input", scheduleFit);
-        document.fonts.removeEventListener("loadingdone", scheduleFit);
+        fonts?.removeEventListener("loadingdone", scheduleFit);
 
         if (typeof frame !== "undefined") {
             view.cancelAnimationFrame(frame);
