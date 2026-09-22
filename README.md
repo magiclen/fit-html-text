@@ -69,6 +69,68 @@ await document.fonts.ready;
 fitText(element);
 ```
 
+## React and Vue
+
+The functions only need the DOM element, so they work with any framework. Call `autoFitText` after the element is mounted, and call the returned function when it is unmounted.
+
+### React
+
+```tsx
+import { autoFitText } from "fit-html-text";
+import { useLayoutEffect, useRef } from "react";
+
+export function FitTitle({ text, maxFontSize }: { text: string; maxFontSize?: number }) {
+    const ref = useRef<HTMLHeadingElement>(null);
+
+    useLayoutEffect(() => {
+        if (ref.current === null) {
+            return;
+        }
+
+        return autoFitText(ref.current, { maxFontSize });
+    }, [maxFontSize]);
+
+    return <h1 ref={ref}>{text}</h1>;
+}
+```
+
+`useLayoutEffect` fits the text before the browser paints it. `text` does not need to be a dependency, because `autoFitText` watches the text itself.
+
+### Vue
+
+```vue
+<script setup lang="ts">
+import { autoFitText } from "fit-html-text";
+import { useTemplateRef, watchEffect } from "vue";
+
+const props = defineProps<{ text: string; maxFontSize?: number }>();
+const title = useTemplateRef<HTMLElement>("title");
+
+watchEffect(
+    (onCleanup) => {
+        if (title.value === null) {
+            return;
+        }
+
+        onCleanup(autoFitText(title.value, { maxFontSize: props.maxFontSize }));
+    },
+    { flush: "post" },
+);
+</script>
+
+<template>
+    <h1 ref="title">{{ text }}</h1>
+</template>
+```
+
+The effect starts again when the element or the options change. `useTemplateRef` needs Vue 3.5 or later.
+
+### Notes
+
+- Do not set `font-size` on the element with the framework, such as `style={{ fontSize }}` in React or `:style` in Vue, because the framework can overwrite the font size set by `fitText`. In Vue, a `:style` string replaces the whole inline style when it changes, so use an object without `fontSize`. Set the base font size with a class or on a parent element instead.
+- A controlled input in React and `v-model` in Vue set the `value` in code when the state changes. Typing is detected, but other changes are not, so call `fitText` after the value changes, for example in `useLayoutEffect` with the value as a dependency, or in `watch` with `flush: "post"`.
+- jsdom has no layout, so `fitText` returns `null` and `autoFitText` changes nothing there. Tests do not need to mock `ResizeObserver`, `document.fonts`, or `requestAnimationFrame`.
+
 ## Migrating from 0.3.x
 
 - The options are renamed: `fontMinSize` to `minFontSize`, `fontMaxSize` to `maxFontSize`, `containerMaxWidth` to `maxWidth`, `containerMaxHeight` to `maxHeight`, and `multipleLines` to `multiline`.
