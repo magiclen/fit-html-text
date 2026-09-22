@@ -1,192 +1,185 @@
+import type { ContentSize } from "./measure.ts";
+import { getContentSize, isTextControl, measureFontSize } from "./measure.ts";
+
+/**
+ * Options for `fitText` and `autoFitText`. Invalid values, such as `0`, negative numbers, and
+ * `NaN`, use the defaults.
+ */
 export interface FitTextOptions {
     /**
      * The minimum font size, in pixels.
      *
      * @default 8
      */
-    fontMinSize?: number;
+    minFontSize?: number;
+
     /**
-     * The maximum font size, in pixels.
-     *
-     * Set to `Infinity` means unlimited.
+     * The maximum font size, in pixels. `Infinity` means no limit, but the font size never goes
+     * above 10000.
      *
      * @default Infinity
      */
-    fontMaxSize?: number;
+    maxFontSize?: number;
+
     /**
-     * The maximum width for text, in pixels.
+     * The maximum width of the text, in pixels.
      *
-     * @default element.getBoundingClientRect().width
+     * @default The content width of the element (without its padding and border).
      */
-    containerMaxWidth?: number;
+    maxWidth?: number;
+
     /**
-     * The maximum height for text, in pixels.
+     * The maximum height of the text, in pixels. `Infinity` means no limit.
      *
-     * If `multipleLines` is set to `true`, this option should also be set to a reasonable integer.
-     *
-     * Set to `Infinity` means unlimited.
-     *
-     * @default Infinity
+     * @default The content height of the element if `multiline` is `true`, otherwise `Infinity`.
      */
-    containerMaxHeight?: number;
+    maxHeight?: number;
+
     /**
-     * Whether to allow multiple lines.
-     *
-     * If the text allows line break or multiple lines, this option should be set to `true`.
+     * Whether the text can wrap into multiple lines. In this mode, the element needs a fixed
+     * height, or `maxHeight` needs to be set.
      *
      * @default false
      */
-    multipleLines?: boolean;
+    multiline?: boolean;
 }
 
-export const fitText = (element: HTMLElement, options?: FitTextOptions): void => {
-    if (typeof options === "undefined") {
-        options = {};
-    }
+const DEFAULT_MIN_FONT_SIZE = 8;
 
+const isPositive = (value: number | undefined): value is number =>
+    typeof value === "number" && value > 0;
+
+const isFinitePositive = (value: number | undefined): value is number =>
+    isPositive(value) && Number.isFinite(value);
+
+/**
+ * Sets the largest font size that makes the text of the element fit into its content box, or into
+ * `maxWidth` and `maxHeight`. The text of an `<input>` or a `<textarea>` is its `value`. If the
+ * text does not fit even at `minFontSize`, `minFontSize` is used.
+ *
+ * @returns The font size that is set, in pixels. It is `null` if nothing is changed, because the
+ *   element is not rendered, has no text, or has no space.
+ */
+export const fitText = (
+    element: HTMLElement,
+    options: Readonly<FitTextOptions> = {},
+): number | null => {
+    const document = element.ownerDocument;
+    const view = document.defaultView;
+    const parent = element.parentNode;
+
+    // The measuring element is inserted next to `element`, so `element` needs a parent other than the document.
     if (
-        typeof options.fontMinSize === "undefined" ||
-        !(options.fontMinSize > 0) ||
-        options.fontMinSize === Infinity
+        view === null ||
+        parent === null ||
+        parent === document ||
+        element.getClientRects().length === 0
     ) {
-        options.fontMinSize = 8;
+        return null;
     }
 
-    if (typeof options.fontMaxSize === "undefined" || !(options.fontMaxSize > 0)) {
-        options.fontMaxSize = Infinity;
+    const text = isTextControl(element) ? element.value : (element.textContent ?? "");
+
+    if (text.trim().length === 0) {
+        return null;
     }
 
-    if (
-        typeof options.containerMaxWidth === "undefined" ||
-        !(options.containerMaxWidth > 0) ||
-        options.containerMaxWidth === Infinity
-    ) {
-        const elementRect = element.getBoundingClientRect();
+    const style = view.getComputedStyle(element);
+    const contentSize = getContentSize(style);
+    const multiline = options.multiline === true;
 
-        options.containerMaxWidth = elementRect.width;
+    const maxWidth = isFinitePositive(options.maxWidth) ? options.maxWidth : contentSize.width;
+    const maxHeight = isPositive(options.maxHeight)
+        ? options.maxHeight
+        : multiline
+          ? contentSize.height
+          : Infinity;
+
+    if (!(maxWidth > 0 && maxHeight > 0)) {
+        return null;
     }
 
-    if (typeof options.containerMaxHeight === "undefined" || !(options.containerMaxHeight > 0)) {
-        options.containerMaxHeight = Infinity;
+    const fontSize = measureFontSize(element, view, style, {
+        minFontSize: isFinitePositive(options.minFontSize)
+            ? options.minFontSize
+            : DEFAULT_MIN_FONT_SIZE,
+        maxFontSize: isPositive(options.maxFontSize) ? options.maxFontSize : Infinity,
+        maxWidth,
+        maxHeight,
+        multiline,
+    });
+
+    element.style.fontSize = `${fontSize}px`;
+
+    return fontSize;
+};
+
+/**
+ * Calls `fitText` now, and calls it again when the size of the element, its text, or the loaded
+ * fonts change. Changing the text by setting the `value` of an `<input>` or a `<textarea>` in code
+ * is not detected, so call `fitText` after doing that.
+ *
+ * @returns A function that stops watching the changes.
+ */
+export const autoFitText = (
+    element: HTMLElement,
+    options: Readonly<FitTextOptions> = {},
+): (() => void) => {
+    const document = element.ownerDocument;
+    const view = document.defaultView;
+
+    if (view === null) {
+        return (): void => {};
     }
 
-    if (typeof options.multipleLines === "undefined") {
-        options.multipleLines = false;
-    }
+    // Copy the options, so that later changes to them do not affect this watcher.
+    const fitOptions = { ...options };
 
-    const style = window.getComputedStyle(element);
+    let frame: number | undefined;
+    let fittedSize: ContentSize | undefined;
 
-    const meassureNode = document.createElement("_measure");
+    const fit = (): void => {
+        frame = undefined;
 
-    meassureNode.style.position = "absolute";
-    meassureNode.style.top = "-9999px";
-    meassureNode.style.left = `-${options.containerMaxWidth}px`;
-    meassureNode.style.visibility = "hidden";
+        fitText(element, fitOptions);
 
-    meassureNode.style.border = style.getPropertyValue("border");
-    meassureNode.style.boxSizing = style.getPropertyValue("box-sizing");
-    meassureNode.style.padding = style.getPropertyValue("padding");
-    meassureNode.style.fontFamily = style.getPropertyValue("font-family");
-    meassureNode.style.letterSpacing = style.getPropertyValue("letter-spacing");
+        // The new font size can resize the element, and this size is remembered so that such a resize does not fit the text again.
+        fittedSize = getContentSize(view.getComputedStyle(element));
+    };
 
-    if (element instanceof HTMLInputElement) {
-        meassureNode.innerText = element.value;
-    } else {
-        meassureNode.innerHTML = element.innerHTML;
-    }
-
-    document.body.appendChild(meassureNode);
-
-    let fontSize = options.fontMinSize + 1;
-    let lastFontSize = options.fontMinSize;
-
-    if (options.multipleLines) {
-        meassureNode.style.display = "block";
-        meassureNode.style.width = `${options.containerMaxWidth}px`;
-
-        meassureNode.style.wordBreak = style.getPropertyValue("word-break");
-
-        // this counter is used to avoid infinite looping
-        let lastClientHeightSameCounter = 0;
-        let lastClientHeight = Number.MIN_SAFE_INTEGER;
-
-        while (fontSize <= options.fontMaxSize) {
-            meassureNode.style.fontSize = `${fontSize}px`;
-
-            const rect = meassureNode.getBoundingClientRect();
-
-            if (rect.height > options.containerMaxHeight) {
-                break;
-            }
-
-            if (rect.height === lastClientHeight) {
-                lastClientHeightSameCounter += 1;
-
-                if (lastClientHeightSameCounter === 3) {
-                    break;
-                }
-            } else {
-                lastClientHeightSameCounter = 0;
-            }
-
-            lastClientHeight = rect.height;
-
-            lastFontSize = fontSize;
-
-            fontSize += 1;
+    // Fit the text at most once per frame.
+    const scheduleFit = (): void => {
+        if (typeof frame === "undefined") {
+            frame = view.requestAnimationFrame(fit);
         }
-    } else {
-        // this counter is used to avoid infinite looping
-        let lastClientWidthSameCounter = 0;
-        let lastClientWidth = Number.MIN_SAFE_INTEGER;
-        let lastClientHeight = Number.MIN_SAFE_INTEGER;
+    };
 
-        while (fontSize <= options.fontMaxSize) {
-            meassureNode.style.fontSize = `${fontSize}px`;
+    const resizeObserver = new view.ResizeObserver(() => {
+        const size = getContentSize(view.getComputedStyle(element));
 
-            const rect = meassureNode.getBoundingClientRect();
-
-            if (rect.width > options.containerMaxWidth) {
-                break;
-            }
-
-            if (rect.height > options.containerMaxHeight) {
-                break;
-            }
-
-            if (rect.width === lastClientWidth) {
-                lastClientWidthSameCounter += 1;
-
-                if (lastClientWidthSameCounter === 3) {
-                    break;
-                }
-            } else {
-                lastClientWidthSameCounter = 0;
-            }
-
-            const diffWidth = rect.width - lastClientWidth;
-            const diffHeight = rect.height - lastClientHeight;
-
-            lastClientWidth = rect.width;
-            lastClientHeight = rect.height;
-
-            lastFontSize = fontSize;
-
-            const step = Math.max(
-                1,
-                Math.floor(
-                    Math.min(
-                        (options.containerMaxWidth - rect.width) / (diffWidth + 3),
-                        (options.containerMaxHeight - rect.height) / (diffHeight + 3),
-                    ),
-                ),
-            );
-
-            fontSize += step;
+        if (size.width !== fittedSize?.width || size.height !== fittedSize.height) {
+            scheduleFit();
         }
-    }
+    });
 
-    document.body.removeChild(meassureNode);
+    const mutationObserver = new view.MutationObserver(scheduleFit);
 
-    element.style.fontSize = `${lastFontSize}px`;
+    fit();
+
+    resizeObserver.observe(element);
+    mutationObserver.observe(element, { characterData: true, childList: true, subtree: true });
+    element.addEventListener("input", scheduleFit);
+    document.fonts.addEventListener("loadingdone", scheduleFit);
+
+    return (): void => {
+        resizeObserver.disconnect();
+        mutationObserver.disconnect();
+        element.removeEventListener("input", scheduleFit);
+        document.fonts.removeEventListener("loadingdone", scheduleFit);
+
+        if (typeof frame !== "undefined") {
+            view.cancelAnimationFrame(frame);
+            frame = undefined;
+        }
+    };
 };
